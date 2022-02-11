@@ -267,7 +267,7 @@ Interaction effects involve two or more predictors. Such an effect occurs when o
 After exploring the Ames training set, we might find that the regression slopes for the gross living area differ for different building types: 
 
 ```{r engineering-ames-feature-plots}
-ggplot(ames_train, aes(x = Gr_Liv_Area, y = 10^Sale_Price)) + 
+ggplot(ames_train, aes(x = Gr_Liv_Area, y = Sale_Price)) + 
   geom_point(alpha = .2) + 
   facet_wrap(~ Bldg_Type) + 
   geom_smooth(method = lm, formula = y ~ x, se = FALSE, col = "red") + 
