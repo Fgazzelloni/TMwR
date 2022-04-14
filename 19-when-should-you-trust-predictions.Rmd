@@ -27,12 +27,15 @@ If you had a model result indicating that you had a 51% chance of having contrac
 Let's use a function that can simulate classification data with two classes and two predictors (`x` and `y`). The true model is a logistic regression model with the equation: 
 
 $$
-logit\left(\frac{p}{1-p}\right) = -1 - 2x - \frac{x^2}{5} + 2y^2 
+\mathrm{logit}(p) = -1 - 2x - \frac{x^2}{5} + 2y^2 
 $$
 
 The two predictors follow a bivariate normal distribution with a correlation of 0.70. We'll create a training set of 200 samples and a test set of 50: 
 
 ```{r trust-simulation}
+library(tidymodels)
+tidymodels_prefer()
+
 simulate_two_classes <- 
   function (n, error = 0.1, eqn = quote(-1 - 2 * x - 0.2 * x^2 + 2 * y^2))  {
     # Slightly correlated predictors
@@ -41,8 +44,8 @@ simulate_two_classes <-
     colnames(dat) <- c("x", "y")
     cls <- paste0("class_", 1:2)
     dat <- 
-      tibble::as_tibble(dat) %>% 
-      dplyr::mutate(
+      as_tibble(dat) %>% 
+      mutate(
         linear_pred = !!eqn,
         # Add some misclassification noise
         linear_pred = linear_pred + rnorm(n, sd = error),
@@ -61,9 +64,6 @@ testing_set  <- simulate_two_classes(50)
 We estimate a logistic regression model using Bayesian methods (using the default Gaussian prior distributions for the parameters): 
 
 ```{r trust-bayes-glm}
-library(tidymodels)
-tidymodels_prefer()
-
 two_class_mod <- 
    logistic_reg() %>% 
    set_engine("stan", seed = 1902) %>% 
@@ -100,7 +100,7 @@ grid_pred %>%
 
 The data points closest to the class boundary are the most uncertain. If their values changed slightly, their predicted class might change. One simple method for disqualifying some results is to call them "equivocal" if the values are within some range around 50% (or whatever the appropriate probability cutoff might be). Depending on the problem that the model is being applied to, this might indicate that another measurement should be collected or that we require more information before a trustworthy prediction is possible.  
 
-We could base the width of the band around the cutoff on how performance improves when the uncertain results are removed. However, we should also estimate the reportable rate (the expected proportion of usable results). For example, it would be not be useful in real-world situations to have perfect performance but only release predictions on 2% of the samples passed to the model. 
+We could base the width of the band around the cutoff on how performance improves when the uncertain results are removed. However, we should also estimate the reportable rate (the expected proportion of usable results). For example, it would not be useful in real-world situations to have perfect performance but only release predictions on 2% of the samples passed to the model. 
 
 Let's use the test set to determine the balance between improving performance and having enough reportable results. The predictions are created using:  
 
@@ -402,7 +402,7 @@ However, what does it mean when a new sample has a distance of _X_? Since the PC
 One approach is to treat the distances from the training set data as "normal". For new samples, we can determine how the new distance compares to the range in the reference distribution (from the training set). A _percentile_ can be computed for new samples that reflect how much of the training set is less extreme than the new samples. 
 
 :::rmdnote
-A percentile of 90% means that most of of the training set data are closer to the data center than the new sample. 
+A percentile of 90% means that most of the training set data are closer to the data center than the new sample. 
 :::
 
 
